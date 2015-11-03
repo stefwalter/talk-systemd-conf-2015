@@ -6,8 +6,9 @@
 ---- [logo-dbus-systemd.png]
 # Cockpit title
 
+# The time we have is short.
 # First we'll give you a quick refresher of what Cockpit does
-# And then we'll look at how it uses systemd (among other things) to do it
+# I'll expect you understand both DBus and systemd.
 
 ---- [text-align=center] [text-color=gray]
  #hellomynameis
@@ -28,21 +29,20 @@ Cockpit is the
 <b>2.</b> Complex Linux features
          <b>discoverable</b></span>
 
-# We have two goals
-
-# ---- [cockpit-login-rhel.png] [duration=0.1]
-# Cockpit runs in a browser. But it's not a "website". A very untraditional
-# web application
+# We have two goals.
+# First broadening who can use linux machines
+# Second making it easy for anyone, including experts, to get one off complex tasks done
 
 ---- [cockpit-login-fedora.png] [duration=0.1]
-
-# ---- [cockpit-login-generic.png] [duration=0.1]
+# Cockpit runs in a browser. But it's not a "website" or traditional web application
 
 ---- [text-align=center]
 Zero footprint
 
+# Cockpit is zero footprint, and socket activated, exits when not in use.
+# Uses a couple of megabytes of disk space, but that rounds nicely to zero.
+
 ---- [cockpit-system.png]
-# Cockpit looks like this
 # I'm going to take you on a bit of a tour of Cockpit, so that the stuff
 # we're talking about later makes sense
 
@@ -53,7 +53,7 @@ Zero footprint
 # You look at all the systemd units, in this case timers
 
 ---- [cockpit-service.png]
-# You look at all the systemd units, in this case timers
+# You can perform systemctl style operations on services
 
 ---- [cockpit-timedate.png]
 # You can change time zones, date, NTP servers
@@ -71,10 +71,11 @@ Zero footprint
 # You can even pull up a terminal
 
 ---- [cockpit-run-container.png]
-# You can run and interact with containers
+# You can run and interact with containers, docker containers
 
 ---- [cockpit-kubernetes-topology.png]
-# And watch them be scheduled across machines
+# And watch them be scheduled across machines, via kubernetes
+# There's lots more to Cockpit, but I hope that gives you some idea
 
 ---- [shutterdog@flickr-359841474_9b0c7bdbc9_o.jpg] [bottom]
 Look ma, no backend
@@ -88,7 +89,9 @@ Look ma, no backend
 <span weight="bold" foreground="white">Remotable</span> System APIs
 
 # Cockpit interacts with system APIs directly.
-# Remotable
+# Here we're not talking about C ABI or libraries, but rather APIs
+# that are remotable. They're not necessarily exposed remotely, but
+# rather *remotable*
 
 ----
 <span weight="bold" size="large" foreground="gray">Remotable API examples</span>
@@ -100,18 +103,44 @@ Look ma, no backend
 • Files
 • /proc
 
+# Here are some of the common ways remotable APIs are idmplemented
 
 ----
 cockpit-bridge
 
-# But wait, the browser can't talk to the system APIs
+# But wait, the browser can't talk to the system APIs. We use a bridge
+# sorta similar to systemd's stdio-bridge
+# It's multiplexed, with multiple channels, can do multiple things at once, and
+# sends data on its stdin/stdout, can be called over SSH etc.
 
 ---- [cockpit-transport.png]
+
+# But Cockpit in the browser can't talk to the bridge directly either. A
+# component called cockpit-ws opens a WebSocket that allows it to communicate.
+# Over the WebSocket go the messages, that are then sent to stdio on the bridge.
+# The bridge is launched in its own user session after authentication.
+# If Cockpit is talking to multiple machines, then cockpit-ws opens SSH connections
+# on those other machines, and messages go to those bridges too.
 
 ---- [postmemes-flicker-21236613584_0f3d664bbb_o.jpg] [bottom] [shading-opacity=0.6]
 Get on the DBus
 
+# DBus is the best way to implement a remotable API. So we're going to focus on
+# that more today.
+# I hope you know about DBus
+# Lennart has a talk where he looks at all the capabilities of DBus, monitoring,
+# rich types, access control, introspectability, discoverability, service activation
+# and so on. Cockpit uses a lot of those capabilities.
+# This by the way is the new logo for DBus. DBus had no logo, so we found one.
+
 ---- [cockpit-dbus-proxy.ogv]
+
+# To give you an idea of what we can do with DBus here's an example. We connect
+# to a DBus service using a single line of code, and then have access to its
+# properties on a javascript proxy. This is all happening in the console in your
+# browser, just press F12.
+# We then execute a DBus method with another line of code, and you can see the
+# results take effect. By the way see how Cockpit also reacted in the title bar.
 
 --- [text-color=black] [white]
 <span weight="bold" size="large">Protocol Example</span>
@@ -139,6 +168,11 @@ Get on the DBus
 &gt; }
 </span>
 
+# This is what the messages that are going back and forth from the bridge look like.
+# Raw DBus is hard to implement in the browser, and has some warts, so we've been using
+# a JSON encoding of DBus instead. We open a channel first, then make a method call,
+# and here we can see the reply coming back.
+
 ---- [text-color=black] [white]
 <span weight="bold" size="large">Introspecting Interfaces</span>
 
@@ -154,6 +188,12 @@ Get on the DBus
 
    <span font="Monospace">Method(INT16:1, DOUBLE:2.3, OBJECT_PATH:"/test")</span>
 
+# Now although callers in Cockpit could manually specify the various types when
+# they make a method call, typically they don't do that. Instead the first time
+# that the bridge sees an interface used with a given DBus name, then it Introspects
+# it and uses the response to choose the right kind of string or integer with
+# which to make the call.
+
 ---- [text-color=black] [white]
 <span weight="bold" size="large">org.freedesktop.DBus.Properties     </span>
 <span font="Monospace">
@@ -161,8 +201,14 @@ Get on the DBus
   PropertiesChanged
 
 </span>
-• Minimizes round trips
+• Reduce round trips
 • No races
+
+# As you're aware DBus has properties. I'd like to call your attention to the
+# GetAll() method and the PropertiesChanged signal that are underpinnings of
+# DBus properties. These have the following characteristics: When the properties
+# change, it reduces round trips to get information to an interested caller and
+# removes inherent races if the caller had to invoke a method to retrieve that info.
 
 ---- [text-color=black] [white]
 <span weight="bold" size="large">org.freedesktop.DBus.ObjectManager</span>
@@ -171,14 +217,25 @@ Get on the DBus
   InterfacesAdded
   InterfacesRemoved
 </span>
-• Minimizes round trips
+• Reduce round trips
 • No races
+
+# When if the caller is interested in a whole subtree of objects, rather than just
+# one. For example with systemd, Cockpit is interested in all unit files, or services.
+# Luckily there's a DBus interface called ObjectManager in later versions of
+# the DBus specification. It's poorly named, and is really about interfaces.
+# The DBus caller can get notification when an interface appears at a given object
+# path. It may be that a new unit was created.
+# So again reduces round trips and minimizes races. The caller may be sitting 500ms
+# away in a browser on the other side of the world. If they had to GetAll() for each
+# individual object, and subscribe to all sorts of signals, it just doesn't scale.
 
 ----
 No ObjectManager? What then?
 
-# systemd needs to use ObjectManager in its DBus APIs
-# But it doesn't today, how do we deal with it
+# But systemd doesn't implement ObjectManager. sdbus has support for ObjectManager
+# but its not in use by systemd.
+# So instead we have an Introspect party.
 
 ---- [text-color=black] [white]
 <span weight="bold" size="large">Introspect() party!</span>
@@ -197,37 +254,64 @@ No ObjectManager? What then?
 &lt;/node&gt;
 </span>
 
+# As a fallback for lack of ObjectManager support. The bridge aggressively introspects
+# the subtree of object paths that it's interested in, and fakes the ObjectManager
+# support, so to speak. It calls Introspect() on each node, and looks for children
+# and interfaces available, then it calls GetAll() on each interface, and so on.
+# Because this is a lot of round trips, the cockpit-bridge makes these calls in a general
+# way. It's sitting very close to systemd ... but on the other hand it has no intimate
+# knowledge of systemd, its signals, interfaces and so on.
+
 ----
 TODO
+
+# We've transitioned to the part of the talk where we're talking about where things
+# could work better. I've narrowed this down to just the highlights. The first
+# was about ObjectManager, systemd, and other services should implement it.
 
 ----
 Keep (most of) DBus remotable
 
-# As we start using kdbus more broadnly it's important to keep the core
-# APIs remotable, configuration and otherwise
+# We also saw how important the characteristics of an interface are for it to be
+# effectively remotable. With kdbus coming into place, DBus gets a lot of cool
+# capabilities, such as the ability to make really fast method calls, or send
+# lots af data. However the core APIs that configure and monitor the system need
+# to remain remotable. Some of this is about specific DBus features to stay away
+# from but goes beyond that, some semantics are not remotable. Remotable APIs
+# don't expect the caller of the API to be using the same kernel, endianness,
+# or userland. A classic example of this is timedated.
 
 ----
 Want Mooaaar APIs
 
-# Keep building more DBus system APIs
-# Not just talking about systemd here
-# networkd needs a configuration API
+# The DBus APIs have given us a really great base of system APIs. But we need more
+# For example we need a networkd API. And to anyone else listening. If you want
+# others to integrate with your system tool or technology, build it a DBus API
 
 ----
 Build <span foreground="white">networkd API with rollback</span>
 
-# systemd is often/usually used remotely, as is networkd
-# When configuring network remotely, a core concept needs to be rollback
+# Now networkd has an API for looking at a bit of state, but once we get to
+# a configuration API ... I'd like to mention one important aspect.
+# Since systemd is frequently used on headless systems, and is being configured
+# and used over the network, we need the networkd API to have rollback as a
+# fundamental concept. If the caller goes away while configuring the network,
+# there should be a mechanism to rollback the changes. I won't get into specifics
+# here, but I'd love to talk about this in more detail.
 
 ---- [text-color=gray]
 Heresy: <span foreground="white">Split out sdbus</span>
 
-# All the other C DBus libraries are nasty
-# They all have a mastive asterisk next to them
+# Here's a bit of heresy to finish things off. All the other C DBus libraries are
+# really nasty. They all have a mastive asterisk next to them
 # libdbus: Actually says "Don't use this"
 # GDBus: If GObject is a prerequisite to using DBus ... not gonna happen
 # python-dbus: double deprecated
 # ... and the list goes on ...
+# When sdbus is ready and the dust has settled around kdbus we should work to make
+# seperately reusable, portable, and so on.
+# Linux needs a core API tech like DBus, but the libraries have sucked. sdbus is
+# great and easy to use. It should be broadly applicable and a corner stone library.
 
 ---- [font=Monospace 60px]
  diff <span foreground="white">TODO</span>
@@ -239,12 +323,14 @@ Heresy: <span foreground="white">Split out sdbus</span>
  +
  +* <span weight="bold">Split out sdbus</span> at some point in the future</span>
 
+# And here are those points in summary form, ready to go into the TODO file
+
 ---- [text-color=gray]
 Q: Can Cockpit run without systemd?
 <span foreground="white">A: If you reimplement systemd</span>
 
-# It could ... if someone replicates systemd
 # Cockpit owes a lot to systemd clear APIs and clear definition of the system
+# It probably wouldn't exist, or be very different, if there were no systemd APIs
 
 ---- [redhat-only.png] [text-color=gray]
 
