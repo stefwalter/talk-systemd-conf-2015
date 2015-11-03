@@ -30,13 +30,13 @@ Cockpit is the
 
 # We have two goals
 
----- [cockpit-login-rhel.png] [duration=0.1]
+# ---- [cockpit-login-rhel.png] [duration=0.1]
 # Cockpit runs in a browser. But it's not a "website". A very untraditional
 # web application
 
 ---- [cockpit-login-fedora.png] [duration=0.1]
 
----- [cockpit-login-generic.png] [duration=0.1]
+# ---- [cockpit-login-generic.png] [duration=0.1]
 
 ---- [text-align=center]
 Zero footprint
