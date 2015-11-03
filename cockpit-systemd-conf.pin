@@ -1,9 +1,13 @@
 [font=Overpass 100px]
 [text-color=white]
+[shading-opacity=0]
 [black]
 
----- [logo.png]
+---- [logo-dbus-systemd.png]
 # Cockpit title
+
+# First we'll give you a quick refresher of what Cockpit does
+# And then we'll look at how it uses systemd (among other things) to do it
 
 ---- [text-align=center] [text-color=gray]
  #hellomynameis
@@ -38,12 +42,6 @@ Zero footprint
 # I'm going to take you on a bit of a tour of Cockpit, so that the stuff
 # we're talking about later makes sense
 
----- [cockpit-storage.png]
-# You can mount, format, partition storage.
-
----- [cockpit-network-manager.png]
-# You can configure the network
-
 ---- [cockpit-hostname.png]
 # You can do things like change the host name via hostnamed
 
@@ -62,17 +60,14 @@ Zero footprint
 ---- [cockpit-journal.png]
 # You can browse through the journal
 
+---- [cockpit-network-manager.png]
+# You can configure the network
+
 ---- [cockpit-terminal.png]
 # You can even pull up a terminal
 
----- [cockpit-midc.png]
-# It's a full terminal
-
 ---- [cockpit-run-container.png]
 # You can run and interact with containers
-
----- [cockpit-kubernetes-service.png]
-# You can orchestrate those containers in kubernetes
 
 ---- [cockpit-kubernetes-topology.png]
 # And watch them be scheduled across machines
@@ -85,23 +80,22 @@ Look ma, no backend
 # management agent and a REST API and so on. Cockpit is not like
 # that.
 
-----
-System APIs
-
-# Cockpit interacts with system APIs directly.
-
-
 ---- [text-color=gray]
 <span weight="bold" foreground="white">Remotable</span> System APIs
+
+# Cockpit interacts with system APIs directly.
 # Remotable
 
 ----
-DBus
-HTTP
-Spawning
-Sockets
-Files
-/proc
+<span weight="bold" size="large" foreground="gray">Remotable API examples</span>
+
+• DBus
+• HTTP (aka REST)
+• Spawning processes
+• Sockets
+• Files
+• /proc
+
 
 ----
 cockpit-bridge
@@ -110,60 +104,71 @@ cockpit-bridge
 
 ---- [cockpit-transport.png]
 
----- [postmemes-flicker-21236613584_0f3d664bbb_o.jpg] [bottom]
+---- [postmemes-flicker-21236613584_0f3d664bbb_o.jpg] [bottom] [shading-opacity=0.6]
 Get on the DBus
 
 ---- [cockpit-dbus-proxy.ogv]
 
---- [text-color=black] [white] [shading-color=white]
+--- [text-color=black] [white]
+<span weight="bold" size="large">Protocol Example</span>
 <span font="Monospace">
-{
-  "command": "open",
-  "channel": "mydbus",
-  "payload": "dbus-json3",
-  "name": "org.freedesktop.hostname1"
-}
-mydbus
-{
-  "call": [
-    "/org/freedesktop/hostname1",
-    "org.freedesktop.hostname1",
-    "SetStaticHostname",
-    [ "mypinkpony.local", true ]
-  ],
-  "id": "cookie"
-}
+&lt; {
+&lt;   "command": "open",
+&lt;   "channel": "mydbus",
+&lt;   "payload": "dbus-json3",
+&lt;   "name": "org.freedesktop.hostname1"
+&lt; }
+
+&lt; mydbus
+&lt; {
+&lt;   "call": [
+&lt;     "/org/freedesktop/hostname1",
+&lt;     "org.freedesktop.hostname1",
+&lt;     "SetStaticHostname", [ "mypinkpony.local", true ] ],
+&lt;   "id": "cookie"
+&lt; }
+
+&gt; mydbus
+&gt; {
+&gt;   "reply": [ null ],
+&gt;   "id": "cookie"
+&gt; }
 </span>
 
-# XXXX show the reply
+---- [text-color=black] [white]
+<span weight="bold" size="large">Introspecting Interfaces</span>
 
----- [text-align=center] [text-color=black] [white] [shading-color=white]
-<span font="Monospace">["/test", 1, 2.3]</span>
+1. Method call from Cockpit
 
-becomes
+   <span font="Monospace">org.interface.Method(1, 2.3, "/test")</span>
 
-<span font="Monospace">(OBJECT_PATH:"/test", INT16:1, DOUBLE:2.3)</span>
+2. cockpit-bridge calls Introspect
 
----- [font=Monospace 60px]
-Introspect()
+   <span font="Monospace">Introspect()</span>
 
-----[font=Monospace 60px]
-org.freedesktop.DBus.Properties
+3. Cast types and make call
 
-----[font=Monospace 60px]
-GetAll()
-PropertiesChanged
+   <span font="Monospace">Method(INT16:1, DOUBLE:2.3, OBJECT_PATH:"/test")</span>
 
-----[font=Monospace 60px]
-org.freedesktop.DBus.ObjectManager
+---- [text-color=black] [white]
+<span weight="bold" size="large">org.freedesktop.DBus.Properties     </span>
+<span font="Monospace">
+  GetAll()
+  PropertiesChanged
 
- * No races
- * No roundtrips
+</span>
+• Minimizes round trips
+• No races
 
-----[font=Monospace 60px]
-GetManagedObjects()
-InterfacesAdded
-InterfacesRemoved
+---- [text-color=black] [white]
+<span weight="bold" size="large">org.freedesktop.DBus.ObjectManager</span>
+<span font="Monospace">
+  GetManagedObjects()
+  InterfacesAdded
+  InterfacesRemoved
+</span>
+• Minimizes round trips
+• No races
 
 ----
 No ObjectManager? What then?
@@ -171,13 +176,25 @@ No ObjectManager? What then?
 # systemd needs to use ObjectManager in its DBus APIs
 # But it doesn't today, how do we deal with it
 
----- [font=Monospace 30px]
-<node name="/com/example/object">
-  <interface name="com.example.Interface">
-  </interface>
-  <node name="child"/>
-  <node name="another"/>
-</node>
+---- [text-color=black] [white]
+<span weight="bold" size="large">Introspect() party!</span>
+
+<span font="Monospace">
+&lt;node name="/com/example/object"&gt;
+  &lt;interface name="com.example.Interface"&gt;
+    ...
+  &lt;/interface&gt;
+  &lt;node name="child"/&gt;
+  &lt;node name="another"/&gt;
+&lt;/node&gt;
+
+&lt;node name="/com/example/object/child"&gt;
+  ...
+&lt;/node&gt;
+</span>
+
+----
+TODO
 
 ----
 Keep (most of) DBus remotable
@@ -208,6 +225,16 @@ Heresy: <span foreground="white">Split out sdbus</span>
 # python-dbus: double deprecated
 # ... and the list goes on ...
 
+---- [font=Monospace 60px]
+ diff <span foreground="white">TODO</span>
+ @@ -19,0 +20,6 @@<span foreground="#4e9a06">
+
+ +* <span weight="bold">Use ObjectManager</span> (it's already implemented)
+ +
+ +* Implement a <span weight="bold">networkd API with rollback</span>
+ +
+ +* <span weight="bold">Split out sdbus</span> at some point in the future</span>
+
 ---- [text-color=gray]
 Q: Can Cockpit run without systemd?
 <span foreground="white">A: If you reimplement systemd</span>
@@ -226,4 +253,3 @@ Q: Can Cockpit run without systemd?
  stef.thewalter.net
 
  <span size="x-small">Credits: Pinpoint, shutterdog on Flickr, postmemes on Flickr</span>
-
