@@ -1,0 +1,229 @@
+[font=Overpass 100px]
+[text-color=white]
+[black]
+
+---- [logo.png]
+# Cockpit title
+
+---- [text-align=center] [text-color=gray]
+ #hellomynameis
+<span weight="bold" foreground="white">Stef Walter</span>
+# I've worked on tons of open source projects, but the most recent is Cockpit.
+# I work at Red Hat
+
+----- [text-align=center] [text-color=gray]
+Cockpit is the
+<span weight="bold" foreground="white">Linux admin interface</span>
+
+-- [text-align=left] [left] [text-color=gray]
+<span size="large">Goals:</span>
+
+<span foreground="white"><b>1.</b> Linux servers
+         <b>usable</b> by non-expert admins
+
+<b>2.</b> Complex Linux features
+         <b>discoverable</b></span>
+
+# We have two goals
+
+---- [cockpit-login.png]
+# Cockpit runs in a browser. But it's not a "website". A very untraditional
+# web application
+
+---- [text-align=center]
+Zero footprint
+
+---- [cockpit-system.png]
+# Cockpit looks like this
+# I'm going to take you on a bit of a tour of Cockpit, so that the stuff
+# we're talking about later makes sense
+
+---- [cockpit-storage.png]
+# You can mount, format, partition storage.
+
+---- [cockpit-network-manager.png]
+# You can configure the network
+
+---- [cockpit-hostname.png]
+# You can do things like change the host name via hostnamed
+
+---- [cockpit-timers.png]
+# You look at all the systemd units, in this case timers
+
+---- [cockpit-service.png]
+# You look at all the systemd units, in this case timers
+
+---- [cockpit-timedate.png]
+# You can change time zones, date, NTP servers
+
+---- [cockpit-shutdown.png]
+# You can schedule reboots
+
+---- [cockpit-journal.png]
+# You can browse through the journal
+
+---- [cockpit-terminal.png]
+# You can even pull up a terminal
+
+---- [cockpit-midc.png]
+# It's a full terminal
+
+---- [cockpit-run-container.png]
+# You can run and interact with containers
+
+---- [cockpit-kubernetes-service.png]
+# You can orchestrate those containers in kubernetes
+
+---- [cockpit-kubernetes-topology.png]
+# And watch them be scheduled across machines
+
+---- [shutterdog@flickr-359841474_9b0c7bdbc9_o.jpg] [bottom]
+Look ma, no backend
+
+# When I say Cockpit runs in the browser ... I really mean that.
+# Most people who would implement Cockpit would build some sorta
+# management agent and a REST API and so on. Cockpit is not like
+# that.
+
+----
+System APIs
+
+# Cockpit interacts with system APIs directly.
+
+
+---- [text-color=gray]
+<span weight="bold" foreground="white">Remotable</span> System APIs
+# Remotable
+
+----
+DBus
+HTTP
+Spawning
+Sockets
+Files
+/proc
+
+----
+cockpit-bridge
+
+# But wait, the browser can't talk to the system APIs
+
+---- [cockpit-transport.png]
+
+---- [postmemes-flicker-21236613584_0f3d664bbb_o.jpg] [bottom]
+Get on the DBus
+
+---- [cockpit-dbus-proxy.ogv]
+
+--- [text-color=black] [white] [shading-color=white]
+<span font="Monospace">
+{
+  "command": "open",
+  "channel": "mydbus",
+  "payload": "dbus-json3",
+  "name": "org.freedesktop.hostname1"
+}
+mydbus
+{
+  "call": [
+    "/org/freedesktop/hostname1",
+    "org.freedesktop.hostname1",
+    "SetStaticHostname",
+    [ "mypinkpony.local", true ]
+  ],
+  "id": "cookie"
+}
+</span>
+
+# XXXX show the reply
+
+---- [text-align=center] [text-color=black] [white] [shading-color=white]
+<span font="Monospace">["/test", 1, 2.3]</span>
+
+becomes
+
+<span font="Monospace">(OBJECT_PATH:"/test", INT16:1, DOUBLE:2.3)</span>
+
+---- [font=Monospace 60px]
+Introspect()
+
+----[font=Monospace 60px]
+org.freedesktop.DBus.Properties
+
+----[font=Monospace 60px]
+GetAll()
+PropertiesChanged
+
+----[font=Monospace 60px]
+org.freedesktop.DBus.ObjectManager
+
+ * No races
+ * No roundtrips
+
+----[font=Monospace 60px]
+GetManagedObjects()
+InterfacesAdded
+InterfacesRemoved
+
+----
+No ObjectManager? What then?
+
+# systemd needs to use ObjectManager in its DBus APIs
+# But it doesn't today, how do we deal with it
+
+---- [font=Monospace 30px]
+<node name="/com/example/object">
+  <interface name="com.example.Interface">
+  </interface>
+  <node name="child"/>
+  <node name="another"/>
+</node>
+
+----
+Keep (most of) DBus remotable
+
+# As we start using kdbus more broadnly it's important to keep the core
+# APIs remotable, configuration and otherwise
+
+----
+Want Mooaaar APIs
+
+# Keep building more DBus system APIs
+# Not just talking about systemd here
+# networkd needs a configuration API
+
+----
+Build <span foreground="white">networkd API with rollback</span>
+
+# systemd is often/usually used remotely, as is networkd
+# When configuring network remotely, a core concept needs to be rollback
+
+---- [text-color=gray]
+Heresy: <span foreground="white">Split out sdbus</span>
+
+# All the other C DBus libraries are nasty
+# They all have a mastive asterisk next to them
+# libdbus: Actually says "Don't use this"
+# GDBus: If GObject is a prerequisite to using DBus ... not gonna happen
+# python-dbus: double deprecated
+# ... and the list goes on ...
+
+---- [text-color=gray]
+Q: Can Cockpit run without systemd?
+<span foreground="white">A: If you reimplement systemd</span>
+
+# It could ... if someone replicates systemd
+# Cockpit owes a lot to systemd clear APIs and clear definition of the system
+
+---- [redhat-only.png] [text-color=gray]
+
+ Questions?
+
+ <span foreground="white">cockpit-project.org</span>
+
+ #cockpit on Freenode
+
+ stef.thewalter.net
+
+ <span size="x-small">Credits: Pinpoint, shutterdog on Flickr, postmemes on Flickr</span>
+
