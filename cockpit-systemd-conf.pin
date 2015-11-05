@@ -127,7 +127,6 @@ Get on the DBus
 
 # DBus is the best way to implement a remotable API. So we're going to focus on
 # that more today.
-# I hope you know about DBus
 # Lennart has a talk where he looks at all the capabilities of DBus, monitoring,
 # rich types, access control, introspectability, discoverability, service activation
 # and so on. Cockpit uses a lot of those capabilities.
@@ -321,7 +320,7 @@ Heresy: <span foreground="white">Split out sdbus</span>
 # great and easy to use. It should be broadly applicable and a corner stone library.
 
 ----
-systemd should gobble up PolicyKit
+DBus should gobble up PolicyKit
 
 # PolicyKit is really desktop originted
 # It's the fundamental way of escalating privileges in DBus
