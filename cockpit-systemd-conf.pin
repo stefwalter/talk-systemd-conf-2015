@@ -270,7 +270,7 @@ TODO
 # was about ObjectManager, systemd, and other services should implement it.
 
 ----
-Keep (most of) DBus remotable
+DBus must be remotable
 
 # We also saw how important the characteristics of an interface are for it to be
 # effectively remotable. With kdbus coming into place, DBus gets a lot of cool
@@ -279,14 +279,21 @@ Keep (most of) DBus remotable
 # to remain remotable. Some of this is about specific DBus features to stay away
 # from but goes beyond that, some semantics are not remotable. Remotable APIs
 # don't expect the caller of the API to be using the same kernel, endianness,
-# or userland. A classic example of this is timedated.
+# or userland.
 
 ----
-Want Mooaaar APIs
+No "easy" way to remote DBus
 
-# The DBus APIs have given us a really great base of system APIs. But we need more
-# For example we need a networkd API. And to anyone else listening. If you want
-# others to integrate with your system tool or technology, build it a DBus API
+# Unfortunately all the goodness of DBus is lost to most modern developers.
+# There's a whole world of people writing nasty REST APIs, in today's language
+# du jour, that think dBus is too hard. And it is. The client libraries that
+# we have today are very limiting, and the APIs remain unused.
+
+# Even the methods that systemd uses for DBus remoting remain firmly out of
+# reach for anyone else.
+
+# Having an HTTP or other really easy to use bindings would cause an
+# explosion of systemd and DBus usage all over the place.
 
 ----
 Build <span foreground="white">networkd API with rollback</span>
