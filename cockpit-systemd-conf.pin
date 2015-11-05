@@ -313,6 +313,13 @@ Heresy: <span foreground="white">Split out sdbus</span>
 # Linux needs a core API tech like DBus, but the libraries have sucked. sdbus is
 # great and easy to use. It should be broadly applicable and a corner stone library.
 
+----
+systemd should gobble up PolicyKit
+
+# PolicyKit is really desktop originted
+# It's the fundamental way of escalating privileges in DBus
+# Integral part of DBus, really should be part of systemd's work on kdbus
+
 ---- [font=Monospace 60px]
  diff <span foreground="white">TODO</span>
  @@ -19,0 +20,6 @@<span foreground="#4e9a06">
@@ -320,6 +327,8 @@ Heresy: <span foreground="white">Split out sdbus</span>
  +* <span weight="bold">Use ObjectManager</span> (it's already implemented)
  +
  +* Implement a <span weight="bold">networkd API with rollback</span>
+ +
+ +* <span weight="bold">Gobble up PolicyKit</span>
  +
  +* <span weight="bold">Split out sdbus</span> at some point in the future</span>
 
